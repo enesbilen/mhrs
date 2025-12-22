@@ -2,9 +2,19 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import Select from 'react-select';
+import dynamic from 'next/dynamic';
 import ConfirmDialog from '@/components/common/ConfirmDialog';
 import AlertDialog from '@/components/common/AlertDialog';
+
+// Dynamic import to avoid SSR hydration issues
+const Select = dynamic(() => import('react-select'), {
+  ssr: false,
+  loading: () => (
+    <div className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm bg-gray-50 animate-pulse">
+      <span className="text-gray-400">Yükleniyor...</span>
+    </div>
+  ),
+});
 
 export default function CriteriaManager({
   diagnosisId,
