@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import Select from 'react-select';
 
 const QUESTION_TYPES = [
   { value: 'yes_no', label: 'Evet/Hayır' },
@@ -107,26 +108,58 @@ export default function QuestionForm({ categories, question = null, defaultOrder
     }
   };
 
+  // Prepare options for react-select
+  const categoryOptions = categories.map((cat) => ({
+    value: cat.id,
+    label: cat.name,
+  }));
+
+  const selectedCategory = formData.category_id
+    ? categoryOptions.find((opt) => opt.value === formData.category_id)
+    : null;
+
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
       <div>
-        <label className="block text-sm font-medium text-gray-700">
+        <label className="block text-sm font-medium text-gray-700 mb-1">
           Kategori
         </label>
-        <select
-          value={formData.category_id}
-          onChange={(e) =>
-            setFormData({ ...formData, category_id: e.target.value })
+        <Select
+          value={selectedCategory}
+          onChange={(option) =>
+            setFormData({ ...formData, category_id: option?.value || '' })
           }
-          className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-        >
-          <option value="">Kategori seçiniz (opsiyonel)</option>
-          {categories.map((cat) => (
-            <option key={cat.id} value={cat.id}>
-              {cat.name}
-            </option>
-          ))}
-        </select>
+          options={categoryOptions}
+          isSearchable={true}
+          isClearable={true}
+          placeholder="Kategori ara veya seçiniz..."
+          className="react-select-container"
+          classNamePrefix="react-select"
+          styles={{
+            control: (base) => ({
+              ...base,
+              minHeight: '38px',
+              borderColor: '#d1d5db',
+              '&:hover': {
+                borderColor: '#9ca3af',
+              },
+            }),
+            menu: (base) => ({
+              ...base,
+              zIndex: 9999,
+            }),
+          }}
+          theme={(theme) => ({
+            ...theme,
+            colors: {
+              ...theme.colors,
+              primary: '#2563eb',
+              primary25: '#dbeafe',
+              primary50: '#bfdbfe',
+              primary75: '#93c5fd',
+            },
+          })}
+        />
       </div>
 
       <div>

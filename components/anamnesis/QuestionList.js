@@ -22,7 +22,7 @@ const CRITERIA_LABELS = {
   developmental_neurological: 'Gelişimsel/nörolojik durum nedeniyle değerlendirilemez',
 };
 
-export default function QuestionList({ questions: initialQuestions, categories }) {
+export default function QuestionList({ questions: initialQuestions, categories, sortBy = 'id', sortOrder = 'desc' }) {
   const router = useRouter();
   const [questions, setQuestions] = useState(initialQuestions);
 
@@ -49,9 +49,20 @@ export default function QuestionList({ questions: initialQuestions, categories }
   const [filterType, setFilterType] = useState('all');
   const [filterRequired, setFilterRequired] = useState('all');
 
-  // Filter logic
-  const filteredQuestions = useMemo(() => {
-    return questions.filter((q) => {
+  // Helper functions for client-side sorting
+  const getCriteriaSortValue = (question) => {
+    if (!question.criteria || question.criteria.length === 0) return '';
+    return question.criteria.sort().join(',');
+  };
+
+  const getDiagnosesSortValue = (question) => {
+    if (!question.relatedDiagnoses || question.relatedDiagnoses.length === 0) return '';
+    return question.relatedDiagnoses.map(d => d.name).sort().join(',');
+  };
+
+  // Filter and sort logic
+  const filteredAndSortedQuestions = useMemo(() => {
+    let filtered = questions.filter((q) => {
       // Search filter
       const searchMatch =
         !searchTerm ||
@@ -74,13 +85,67 @@ export default function QuestionList({ questions: initialQuestions, categories }
 
       return searchMatch && categoryMatch && typeMatch && requiredMatch;
     });
-  }, [questions, searchTerm, filterCategory, filterType, filterRequired]);
+
+    // Client-side sorting for criteria and diagnoses
+    if (sortBy === 'criteria' || sortBy === 'diagnoses') {
+      filtered.sort((a, b) => {
+        let aValue, bValue;
+        
+        if (sortBy === 'criteria') {
+          aValue = getCriteriaSortValue(a);
+          bValue = getCriteriaSortValue(b);
+        } else {
+          aValue = getDiagnosesSortValue(a);
+          bValue = getDiagnosesSortValue(b);
+        }
+
+        if (aValue < bValue) return sortOrder === 'asc' ? -1 : 1;
+        if (aValue > bValue) return sortOrder === 'asc' ? 1 : -1;
+        return 0;
+      });
+    }
+
+    return filtered;
+  }, [questions, searchTerm, filterCategory, filterType, filterRequired, sortBy, sortOrder]);
 
   const handleClearFilters = () => {
     setSearchTerm('');
     setFilterCategory('all');
     setFilterType('all');
     setFilterRequired('all');
+  };
+
+  const getSortUrl = (field) => {
+    const newOrder = sortBy === field && sortOrder === 'desc' ? 'asc' : 'desc';
+    return `/anamnesis/questions?sortBy=${field}&sortOrder=${newOrder}`;
+  };
+
+  const SortButton = ({ field, label }) => {
+    const isActive = sortBy === field;
+    const currentOrder = isActive ? sortOrder : 'desc';
+    return (
+      <Link
+        href={getSortUrl(field)}
+        className="flex items-center space-x-1 hover:text-gray-900 focus:outline-none"
+      >
+        <span>{label}</span>
+        {isActive ? (
+          currentOrder === 'asc' ? (
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
+            </svg>
+          ) : (
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+            </svg>
+          )
+        ) : (
+          <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4" />
+          </svg>
+        )}
+      </Link>
+    );
   };
 
   const handleDeleteClick = (id) => {
@@ -172,7 +237,7 @@ export default function QuestionList({ questions: initialQuestions, categories }
         ]}
         onClearFilters={handleClearFilters}
         totalCount={questions.length}
-        filteredCount={filteredQuestions.length}
+        filteredCount={filteredAndSortedQuestions.length}
       />
 
       <div className="overflow-x-auto">
@@ -180,25 +245,25 @@ export default function QuestionList({ questions: initialQuestions, categories }
           <thead className="bg-gray-50">
             <tr>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Sıra
+                <SortButton field="order_index" label="Sıra" />
               </th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Soru
+                <SortButton field="question" label="Soru" />
               </th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Kategori
+                <SortButton field="category" label="Kategori" />
               </th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Tip
+                <SortButton field="type" label="Tip" />
               </th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Zorunlu
+                <SortButton field="required" label="Zorunlu" />
               </th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Kriterler
+                <SortButton field="criteria" label="Kriterler" />
               </th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                İlişkili Tanılar
+                <SortButton field="diagnoses" label="İlişkili Tanılar" />
               </th>
               <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
                 İşlemler
@@ -206,7 +271,7 @@ export default function QuestionList({ questions: initialQuestions, categories }
             </tr>
           </thead>
           <tbody className="bg-white divide-y divide-gray-200">
-            {filteredQuestions.map((question, index) => (
+            {filteredAndSortedQuestions.map((question, index) => (
               <tr key={question.id}>
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                   {question.order_index || index + 1}
@@ -275,7 +340,6 @@ export default function QuestionList({ questions: initialQuestions, categories }
                       <svg className="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
                       </svg>
-                      Düzenle
                     </Link>
                     <button
                       onClick={() => handleDeleteClick(question.id)}
@@ -296,7 +360,6 @@ export default function QuestionList({ questions: initialQuestions, categories }
                           <svg className="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
                           </svg>
-                          Sil
                         </>
                       )}
                     </button>
@@ -307,7 +370,7 @@ export default function QuestionList({ questions: initialQuestions, categories }
           </tbody>
         </table>
 
-        {filteredQuestions.length === 0 && (
+        {filteredAndSortedQuestions.length === 0 && (
           <div className="text-center py-8 text-gray-500">
             {searchTerm || filterCategory !== 'all' || filterType !== 'all' || filterRequired !== 'all'
               ? 'Arama kriterlerine uygun soru bulunamadı'

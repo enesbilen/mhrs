@@ -12,7 +12,10 @@ export async function GET(request, { params }) {
 
     const { id } = await params;
     const categories = await db.query(
-      'SELECT * FROM anamnesis_categories WHERE id = ?',
+      `SELECT c.*, s.name as step_name, s.order_index as step_order, s.description as step_description
+       FROM anamnesis_categories c
+       LEFT JOIN anamnesis_steps s ON c.step_id = s.id
+       WHERE c.id = ?`,
       [id]
     );
 
@@ -43,11 +46,18 @@ export async function PUT(request, { params }) {
 
     const { id } = await params;
     const body = await request.json();
-    const { name, order_index } = body;
+    const { name, step_id, order_index } = body;
 
     if (!name) {
       return NextResponse.json(
         { error: 'Kategori adı gerekli' },
+        { status: 400 }
+      );
+    }
+
+    if (!step_id) {
+      return NextResponse.json(
+        { error: 'Step ID gerekli' },
         { status: 400 }
       );
     }
@@ -79,8 +89,8 @@ export async function PUT(request, { params }) {
     }
 
     await db.execute(
-      'UPDATE anamnesis_categories SET name = ?, order_index = ? WHERE id = ?',
-      [name, order_index !== undefined ? order_index : 0, id]
+      'UPDATE anamnesis_categories SET name = ?, step_id = ?, order_index = ? WHERE id = ?',
+      [name, step_id, order_index !== undefined ? order_index : 0, id]
     );
 
     return NextResponse.json({

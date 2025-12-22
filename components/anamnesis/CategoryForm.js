@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import AlertDialog from '@/components/common/AlertDialog';
 
@@ -8,10 +8,28 @@ export default function CategoryForm({ category = null }) {
   const router = useRouter();
   const [formData, setFormData] = useState({
     name: category?.name || '',
+    step_id: category?.step_id || category?.step || null,
     order_index: category?.order_index || 0,
   });
+  const [steps, setSteps] = useState([]);
   const [alertDialog, setAlertDialog] = useState({ isOpen: false, message: '', variant: 'error' });
   const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    // Fetch steps
+    fetch('/api/anamnesis/steps')
+      .then(res => res.json())
+      .then(data => {
+        if (Array.isArray(data)) {
+          setSteps(data);
+          // If no step_id is set and steps exist, set first step as default
+          if (!formData.step_id && data.length > 0) {
+            setFormData(prev => ({ ...prev, step_id: data[0].id }));
+          }
+        }
+      })
+      .catch(err => console.error('Error fetching steps:', err));
+  }, []);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -74,6 +92,33 @@ export default function CategoryForm({ category = null }) {
             placeholder="Örn: Genel Bilgiler"
             className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
           />
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium text-gray-700">
+            Step *
+          </label>
+          <select
+            required
+            value={formData.step_id || ''}
+            onChange={(e) =>
+              setFormData({
+                ...formData,
+                step_id: parseInt(e.target.value) || null,
+              })
+            }
+            className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+          >
+            <option value="">Step seçin...</option>
+            {steps.map((step) => (
+              <option key={step.id} value={step.id}>
+                {step.name} {step.description ? `- ${step.description}` : ''}
+              </option>
+            ))}
+          </select>
+          <p className="mt-1 text-sm text-gray-500">
+            Kategorinin hangi step'te görüneceğini belirler
+          </p>
         </div>
 
         <div>

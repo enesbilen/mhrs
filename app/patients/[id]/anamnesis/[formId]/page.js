@@ -24,18 +24,21 @@ async function getForm(formId) {
   const form = forms[0];
   return {
     ...form,
-    static_answers: JSON.parse(form.static_answers_json),
+    static_answers: form.static_answers_json ? JSON.parse(form.static_answers_json) : {},
   };
 }
 
 async function getAnswers(formId) {
   const answers = await db.query(
-    `SELECT aa.*, q.question_text, q.question_type, q.options_json, c.name as category_name
+    `SELECT aa.*, q.question_text, q.question_type, q.options_json, 
+            c.name as category_name, s.order_index as category_step, c.order_index as category_order,
+            s.name as step_name, s.id as step_id
      FROM anamnesis_answers aa
      JOIN anamnesis_questions q ON aa.question_id = q.id
      LEFT JOIN anamnesis_categories c ON q.category_id = c.id
+     LEFT JOIN anamnesis_steps s ON c.step_id = s.id
      WHERE aa.form_id = ?
-     ORDER BY c.order_index, q.order_index`,
+     ORDER BY s.order_index ASC, c.order_index ASC, q.order_index ASC`,
     [formId]
   );
 
@@ -184,7 +187,10 @@ async function getUnmatchedDiagnoses(formId, matchedIds) {
 
 async function getCategories() {
   return await db.query(
-    'SELECT * FROM anamnesis_categories ORDER BY order_index'
+    `SELECT c.*, s.name as step_name, s.order_index as step_order, s.description as step_description, s.id as step_id
+     FROM anamnesis_categories c
+     LEFT JOIN anamnesis_steps s ON c.step_id = s.id
+     ORDER BY s.order_index ASC, c.order_index ASC`
   );
 }
 

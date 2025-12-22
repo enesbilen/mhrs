@@ -1,8 +1,9 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import TableFilter from '@/components/common/TableFilter';
 import ConfirmDialog from '@/components/common/ConfirmDialog';
 import AlertDialog from '@/components/common/AlertDialog';
 
@@ -12,6 +13,119 @@ export default function CategoryList({ categories: initialCategories }) {
   const [deleting, setDeleting] = useState(null);
   const [confirmDialog, setConfirmDialog] = useState({ isOpen: false, categoryId: null });
   const [alertDialog, setAlertDialog] = useState({ isOpen: false, message: '', variant: 'error' });
+  const [searchTerm, setSearchTerm] = useState('');
+  const [stepFilter, setStepFilter] = useState('all');
+  const [sortField, setSortField] = useState('updated_at');
+  const [sortOrder, setSortOrder] = useState('desc');
+
+  // Get unique steps for filter
+  const uniqueSteps = useMemo(() => {
+    const steps = [...new Set(categories.map(cat => cat.step_order || cat.step_id || cat.step || 1))].sort((a, b) => a - b);
+    return steps;
+  }, [categories]);
+
+  // Filter and sort logic
+  const filteredAndSortedCategories = useMemo(() => {
+    let filtered = categories.filter((category) => {
+      // Search filter
+      const searchMatch =
+        !searchTerm ||
+        category.name.toLowerCase().includes(searchTerm.toLowerCase());
+
+      // Step filter
+      const stepMatch =
+        stepFilter === 'all' ||
+        (category.step_order || category.step_id || category.step || 1).toString() === stepFilter;
+
+      return searchMatch && stepMatch;
+    });
+
+    // Sort logic
+    filtered.sort((a, b) => {
+      let aValue, bValue;
+
+      switch (sortField) {
+        case 'updated_at':
+          aValue = new Date(a.updated_at || a.created_at || 0).getTime();
+          bValue = new Date(b.updated_at || b.created_at || 0).getTime();
+          break;
+        case 'created_at':
+          aValue = new Date(a.created_at || 0).getTime();
+          bValue = new Date(b.created_at || 0).getTime();
+          break;
+        case 'step':
+          aValue = a.step_order || a.step_id || a.step || 1;
+          bValue = b.step_order || b.step_id || b.step || 1;
+          break;
+        case 'order_index':
+          aValue = a.order_index || 0;
+          bValue = b.order_index || 0;
+          break;
+        case 'name':
+          aValue = (a.name || '').toLowerCase();
+          bValue = (b.name || '').toLowerCase();
+          break;
+        case 'question_count':
+          aValue = a.question_count || 0;
+          bValue = b.question_count || 0;
+          break;
+        default:
+          aValue = new Date(a.updated_at || a.created_at || 0).getTime();
+          bValue = new Date(b.updated_at || b.created_at || 0).getTime();
+      }
+
+      if (typeof aValue === 'string' && typeof bValue === 'string') {
+        return sortOrder === 'asc'
+          ? aValue.localeCompare(bValue)
+          : bValue.localeCompare(aValue);
+      } else {
+        return sortOrder === 'asc' ? aValue - bValue : bValue - aValue;
+      }
+    });
+
+    return filtered;
+  }, [categories, searchTerm, stepFilter, sortField, sortOrder]);
+
+  const handleSort = (field) => {
+    if (sortField === field) {
+      setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
+    } else {
+      setSortField(field);
+      setSortOrder('asc');
+    }
+  };
+
+  const handleClearFilters = () => {
+    setSearchTerm('');
+    setStepFilter('all');
+  };
+
+  const SortButton = ({ field, label }) => {
+    const isActive = sortField === field;
+    return (
+      <button
+        onClick={() => handleSort(field)}
+        className="flex items-center space-x-1 hover:text-gray-900 focus:outline-none"
+      >
+        <span>{label}</span>
+        {isActive ? (
+          sortOrder === 'asc' ? (
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
+            </svg>
+          ) : (
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+            </svg>
+          )
+        ) : (
+          <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4" />
+          </svg>
+        )}
+      </button>
+    );
+  };
 
   const handleDeleteClick = (id) => {
     setConfirmDialog({ isOpen: true, categoryId: id });
@@ -57,18 +171,44 @@ export default function CategoryList({ categories: initialCategories }) {
 
   return (
     <div>
+      <TableFilter
+        searchPlaceholder="Kategori adı ara..."
+        onSearchChange={setSearchTerm}
+        filters={[
+          {
+            id: 'step',
+            label: 'Step',
+            value: stepFilter,
+            options: [
+              { value: 'all', label: 'Tümü' },
+              ...uniqueSteps.map((step) => ({
+                value: step.toString(),
+                label: `Step ${step}`,
+              })),
+            ],
+            onChange: setStepFilter,
+          },
+        ]}
+        onClearFilters={handleClearFilters}
+        totalCount={categories.length}
+        filteredCount={filteredAndSortedCategories.length}
+      />
+
       <div className="overflow-x-auto">
         <table className="min-w-full divide-y divide-gray-200">
           <thead className="bg-gray-50">
             <tr>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Sıra
+                <SortButton field="step" label="Step" />
               </th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Kategori Adı
+                <SortButton field="order_index" label="Sıra" />
               </th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                İlişkili Soru Sayısı
+                <SortButton field="name" label="Kategori Adı" />
+              </th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <SortButton field="question_count" label="İlişkili Soru Sayısı" />
               </th>
               <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
                 İşlemler
@@ -76,8 +216,11 @@ export default function CategoryList({ categories: initialCategories }) {
             </tr>
           </thead>
           <tbody className="bg-white divide-y divide-gray-200">
-            {categories.map((category) => (
+            {filteredAndSortedCategories.map((category) => (
               <tr key={category.id}>
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                  {category.step_order || category.step_id || category.step || 1}
+                </td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                   {category.order_index}
                 </td>
@@ -129,9 +272,11 @@ export default function CategoryList({ categories: initialCategories }) {
           </tbody>
         </table>
 
-        {categories.length === 0 && (
+        {filteredAndSortedCategories.length === 0 && (
           <div className="text-center py-8 text-gray-500">
-            Henüz kategori bulunmuyor
+            {categories.length === 0
+              ? 'Henüz kategori bulunmuyor'
+              : 'Filtre kriterlerine uygun kategori bulunamadı'}
           </div>
         )}
       </div>

@@ -30,7 +30,16 @@ async function getQuestions() {
 
 async function getCategories() {
   return await db.query(
-    'SELECT * FROM anamnesis_categories ORDER BY order_index'
+    `SELECT c.*, s.name as step_name, s.order_index as step_order, s.description as step_description, s.id as step_id
+     FROM anamnesis_categories c
+     LEFT JOIN anamnesis_steps s ON c.step_id = s.id
+     ORDER BY s.order_index ASC, c.order_index ASC`
+  );
+}
+
+async function getSteps() {
+  return await db.query(
+    `SELECT * FROM anamnesis_steps ORDER BY order_index ASC, id ASC`
   );
 }
 
@@ -45,6 +54,7 @@ export default async function NewAnamnesisPage({ params }) {
 
   const questions = await getQuestions();
   const categories = await getCategories();
+  const steps = await getSteps();
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -89,6 +99,7 @@ export default async function NewAnamnesisPage({ params }) {
             patient={patient}
             questions={questions}
             categories={categories}
+            steps={steps}
             userId={user.id}
           />
         </div>

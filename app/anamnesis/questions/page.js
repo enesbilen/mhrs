@@ -10,6 +10,8 @@ async function getQuestions(sortBy = 'id', sortOrder = 'desc') {
     order_index: 'q.order_index',
     question: 'q.question_text',
     category: 'c.name',
+    type: 'q.question_type',
+    required: 'q.is_required',
     created_at: 'q.created_at'
   };
 
@@ -104,60 +106,14 @@ export default async function QuestionsPage({ searchParams }) {
             </div>
           </div>
 
-          <div className="mb-4 bg-white shadow rounded-lg p-4">
-            <div className="flex flex-wrap gap-3 items-center">
-              <span className="font-semibold text-gray-700">Sıralama:</span>
-
-              <div className="flex gap-2">
-                <Link
-                  href={`/anamnesis/questions?sortBy=id&sortOrder=${sortBy === 'id' && sortOrder === 'desc' ? 'asc' : 'desc'}`}
-                  className={`px-3 py-1.5 rounded-md transition-colors duration-200 ${
-                    sortBy === 'id'
-                      ? 'bg-blue-600 text-white hover:bg-blue-700'
-                      : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-                  }`}
-                >
-                  En Yeni {sortBy === 'id' && (sortOrder === 'desc' ? '↓' : '↑')}
-                </Link>
-
-                <Link
-                  href={`/anamnesis/questions?sortBy=order_index&sortOrder=${sortBy === 'order_index' && sortOrder === 'desc' ? 'asc' : 'desc'}`}
-                  className={`px-3 py-1.5 rounded-md transition-colors duration-200 ${
-                    sortBy === 'order_index'
-                      ? 'bg-blue-600 text-white hover:bg-blue-700'
-                      : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-                  }`}
-                >
-                  Sıra İndeksi {sortBy === 'order_index' && (sortOrder === 'desc' ? '↓' : '↑')}
-                </Link>
-
-                <Link
-                  href={`/anamnesis/questions?sortBy=question&sortOrder=${sortBy === 'question' && sortOrder === 'desc' ? 'asc' : 'desc'}`}
-                  className={`px-3 py-1.5 rounded-md transition-colors duration-200 ${
-                    sortBy === 'question'
-                      ? 'bg-blue-600 text-white hover:bg-blue-700'
-                      : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-                  }`}
-                >
-                  Soru Metni {sortBy === 'question' && (sortOrder === 'desc' ? 'Z-A' : 'A-Z')}
-                </Link>
-
-                <Link
-                  href={`/anamnesis/questions?sortBy=category&sortOrder=${sortBy === 'category' && sortOrder === 'desc' ? 'asc' : 'desc'}`}
-                  className={`px-3 py-1.5 rounded-md transition-colors duration-200 ${
-                    sortBy === 'category'
-                      ? 'bg-blue-600 text-white hover:bg-blue-700'
-                      : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-                  }`}
-                >
-                  Kategori {sortBy === 'category' && (sortOrder === 'desc' ? 'Z-A' : 'A-Z')}
-                </Link>
-              </div>
-            </div>
-          </div>
 
           <div className="bg-white shadow overflow-hidden sm:rounded-lg">
-            <QuestionList questions={parsedQuestions} categories={categories} />
+            <QuestionList 
+              questions={parsedQuestions} 
+              categories={categories}
+              sortBy={sortBy}
+              sortOrder={sortOrder}
+            />
           </div>
         </div>
       </main>

@@ -11,7 +11,10 @@ export async function GET() {
     }
 
     const categories = await db.query(
-      'SELECT * FROM anamnesis_categories ORDER BY order_index ASC'
+      `SELECT c.*, s.name as step_name, s.order_index as step_order, s.description as step_description
+       FROM anamnesis_categories c
+       LEFT JOIN anamnesis_steps s ON c.step_id = s.id
+       ORDER BY c.updated_at DESC, c.created_at DESC`
     );
 
     return NextResponse.json(categories);
@@ -33,11 +36,18 @@ export async function POST(request) {
     }
 
     const body = await request.json();
-    const { name, order_index } = body;
+    const { name, step_id, order_index } = body;
 
     if (!name) {
       return NextResponse.json(
         { error: 'Kategori adı gerekli' },
+        { status: 400 }
+      );
+    }
+
+    if (!step_id) {
+      return NextResponse.json(
+        { error: 'Step ID gerekli' },
         { status: 400 }
       );
     }
@@ -56,8 +66,8 @@ export async function POST(request) {
     }
 
     const result = await db.execute(
-      'INSERT INTO anamnesis_categories (name, order_index) VALUES (?, ?)',
-      [name, order_index || 0]
+      'INSERT INTO anamnesis_categories (name, step_id, order_index) VALUES (?, ?, ?)',
+      [name, step_id, order_index || 0]
     );
 
     return NextResponse.json(
