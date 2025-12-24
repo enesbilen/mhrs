@@ -34,6 +34,22 @@ async function getQuestions(sortBy = 'id', sortOrder = 'desc') {
      ORDER BY ${field} ${order}${secondarySort}`
   );
 
+  // Fetch all conditions
+  const conditions = await db.query(
+    `SELECT qc.*, q.question_text as depends_on_question_text
+     FROM question_conditions qc
+     LEFT JOIN anamnesis_questions q ON qc.depends_on_question_id = q.id`
+  );
+
+  // Group conditions by question_id
+  const conditionsByQuestion = conditions.reduce((acc, cond) => {
+    if (!acc[cond.question_id]) {
+      acc[cond.question_id] = [];
+    }
+    acc[cond.question_id].push(cond);
+    return acc;
+  }, {});
+
   // Parse related diagnoses
   return questions.map((q) => {
     const diagnoses = q.related_diagnoses
@@ -42,7 +58,11 @@ async function getQuestions(sortBy = 'id', sortOrder = 'desc') {
           return { id: parseInt(id), name };
         })
       : [];
-    return { ...q, related_diagnoses: diagnoses };
+    return {
+      ...q,
+      related_diagnoses: diagnoses,
+      dynamic_conditions: conditionsByQuestion[q.id] || [],
+    };
   });
 }
 
@@ -68,6 +88,7 @@ export default async function QuestionsPage({ searchParams }) {
     options: q.options_json ? JSON.parse(q.options_json) : null,
     criteria: q.criteria_json ? JSON.parse(q.criteria_json) : [],
     relatedDiagnoses: q.related_diagnoses || [],
+    dynamicConditions: q.dynamic_conditions || [],
   }));
 
   return (

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import AlertDialog from '@/components/common/AlertDialog';
 
@@ -60,47 +60,84 @@ export default function AnamnesisFormWizard({
     return questions.filter(q => categoryIds.includes(q.category_id));
   };
 
-  // Filter questions based on criteria
+  // Filter questions based on criteria and dynamic conditions
   const getFilteredQuestions = (questionsToFilter) => {
     return questionsToFilter.filter((q) => {
-      if (!q.criteria || q.criteria.length === 0) {
-        return true;
-      }
-
-      // Check age criteria
-      if (q.criteria.includes('age_under_4') && patientAge < 4) {
-        return false;
-      }
-
-      // Check consciousness criteria - find consciousness answer from step 1
-      const consciousnessQuestion = questions.find(
-        q => q.question_text === 'Hastanın bilinci' || 
-             q.question_text?.includes('bilinci')
-      );
-      if (consciousnessQuestion) {
-        const consciousnessAnswer = answers[consciousnessQuestion.id];
-        if (
-          q.criteria.includes('consciousness_closed') &&
-          consciousnessAnswer === 'Kapalı'
-        ) {
+      // Static criteria check
+      if (q.criteria && q.criteria.length > 0) {
+        // Check age criteria
+        if (q.criteria.includes('age_under_4') && patientAge < 4) {
           return false;
+        }
+
+        // Check consciousness criteria - find consciousness answer from step 1
+        const consciousnessQuestion = questions.find(
+          q => q.question_text === 'Hastanın bilinci' ||
+               q.question_text?.includes('bilinci')
+        );
+        if (consciousnessQuestion) {
+          const consciousnessAnswer = answers[consciousnessQuestion.id];
+          if (
+            q.criteria.includes('consciousness_closed') &&
+            consciousnessAnswer === 'Kapalı'
+          ) {
+            return false;
+          }
+        }
+
+        // Check developmental/neurological criteria
+        const devNeuroQuestion = questions.find(
+          q => q.question_text?.includes('gelişimsel') ||
+               q.question_text?.includes('nörolojik')
+        );
+        if (devNeuroQuestion) {
+          const devNeuroAnswer = typeof answers[devNeuroQuestion.id] === 'object'
+            ? answers[devNeuroQuestion.id]?.answer
+            : answers[devNeuroQuestion.id];
+          if (
+            q.criteria.includes('developmental_neurological') &&
+            devNeuroAnswer === 'Var'
+          ) {
+            return false;
+          }
         }
       }
 
-      // Check developmental/neurological criteria
-      const devNeuroQuestion = questions.find(
-        q => q.question_text?.includes('gelişimsel') || 
-             q.question_text?.includes('nörolojik')
-      );
-      if (devNeuroQuestion) {
-        const devNeuroAnswer = typeof answers[devNeuroQuestion.id] === 'object' 
-          ? answers[devNeuroQuestion.id]?.answer 
-          : answers[devNeuroQuestion.id];
-        if (
-          q.criteria.includes('developmental_neurological') &&
-          devNeuroAnswer === 'Var'
-        ) {
-          return false;
+      // Dynamic conditions check
+      if (q.conditions && q.conditions.length > 0) {
+        for (const condition of q.conditions) {
+          const dependsOnAnswer = answers[condition.depends_on_question_id];
+
+          // Get the actual answer value (handle both simple and object answers)
+          let answerValue = typeof dependsOnAnswer === 'object'
+            ? dependsOnAnswer?.answer
+            : dependsOnAnswer;
+
+          // Parse condition values (stored as JSON array)
+          const conditionValues = typeof condition.condition_value === 'string'
+            ? JSON.parse(condition.condition_value)
+            : (Array.isArray(condition.condition_value) ? condition.condition_value : []);
+
+          // For multiple choice answers, handle array of answers
+          const answerValues = Array.isArray(answerValue) ? answerValue : [answerValue];
+
+          // Check if any answer value matches any condition value
+          const hasMatch = answerValues.some(av =>
+            conditionValues.some(cv => av === cv)
+          );
+
+          // Apply action based on condition
+          if (condition.action === 'hide') {
+            // Hide if match found
+            if (hasMatch) {
+              return false;
+            }
+          } else if (condition.action === 'show') {
+            // Show only if match found, hide otherwise
+            if (!hasMatch) {
+              return false;
+            }
+          }
         }
       }
 
@@ -570,6 +607,25 @@ export default function AnamnesisFormWizard({
     }
   };
 
+  // Get current step info - memoized to update when answers or currentStep changes
+  const currentStepInfo = useMemo(() => {
+    const step = activeSteps[currentStep - 1];
+    if (!step) return null;
+
+    const stepCategories = categoriesByStep[step.id] || [];
+    const stepName = step.name || `Step ${currentStep}`;
+    const stepQuestions = getFilteredQuestions(getQuestionsForStep(step.id));
+    const isLastStep = currentStep === activeSteps.length;
+
+    return {
+      step,
+      stepCategories,
+      stepName,
+      stepQuestions,
+      isLastStep,
+    };
+  }, [currentStep, answers, activeSteps, categoriesByStep]);
+
   return (
     <div className="bg-white shadow sm:rounded-lg">
       <div className="px-4 py-5 sm:p-6">
@@ -581,7 +637,7 @@ export default function AnamnesisFormWizard({
               const stepName = step.name || `Step ${stepIndex}`;
               const isActive = currentStep === stepIndex;
               const isCompleted = currentStep > stepIndex;
-              
+
               return (
                 <div key={step.id} className="flex items-center">
                   <div className="flex items-center">
@@ -603,100 +659,90 @@ export default function AnamnesisFormWizard({
           </div>
         </div>
 
-        {/* Dynamic Steps */}
-        {activeSteps.map((step, index) => {
-          const stepIndex = index + 1;
-          if (currentStep !== stepIndex) return null;
-          
-          const stepCategories = categoriesByStep[step.id] || [];
-          const stepName = step.name || `Step ${stepIndex}`;
-          const stepQuestions = getFilteredQuestions(getQuestionsForStep(step.id));
-          const isLastStep = stepIndex === activeSteps.length;
-          
-          return (
-            <div key={step.id} className="space-y-6">
-              <div className="flex items-center justify-between mb-4">
-                <div>
-                  <h3 className="text-lg font-medium">{stepName}</h3>
-                  {step.description && (
-                    <p className="text-sm text-gray-600 mt-1">{step.description}</p>
-                  )}
-                </div>
-                {stepIndex > 1 && (
-                  <button
-                    onClick={handlePrevious}
-                    className="text-sm text-blue-600 hover:text-blue-800"
-                  >
-                    ← Geri Dön
-                  </button>
+        {/* Dynamic Step Content */}
+        {currentStepInfo && (
+          <div key={currentStepInfo.step.id} className="space-y-6">
+            <div className="flex items-center justify-between mb-4">
+              <div>
+                <h3 className="text-lg font-medium">{currentStepInfo.stepName}</h3>
+                {currentStepInfo.step.description && (
+                  <p className="text-sm text-gray-600 mt-1">{currentStepInfo.step.description}</p>
                 )}
               </div>
-
-              {stepIndex > 1 && (
-                <div className="bg-yellow-50 p-4 rounded-md mb-4">
-                  <p className="text-sm text-yellow-800">
-                    <strong>Filtrelenen sorular:</strong> Hastanın yaşı ({patientAge} yaş) ve
-                    önceki step cevaplarına göre bazı sorular gösterilmemektedir.
-                  </p>
-                </div>
+              {currentStep > 1 && (
+                <button
+                  onClick={handlePrevious}
+                  className="text-sm text-blue-600 hover:text-blue-800"
+                >
+                  ← Geri Dön
+                </button>
               )}
-
-              {stepCategories.map((category) => {
-                const categoryQuestions = stepQuestions.filter(
-                  (q) => q.category_id == category.id
-                );
-
-                if (categoryQuestions.length === 0) return null;
-
-                return (
-                  <div key={category.id} className="border-t border-gray-200 pt-4">
-                    <h4 className="text-md font-semibold text-gray-900 mb-4">
-                      {category.name}
-                    </h4>
-
-                    <div className="space-y-4">
-                      {categoryQuestions.map((q) => (
-                        <div key={q.id} className="pl-4">
-                          <label className="block text-sm font-medium text-gray-700 mb-2">
-                            {q.question_text}
-                            {q.is_required && <span className="text-red-600 ml-1">*</span>}
-                          </label>
-                          {renderQuestion(q)}
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                );
-              })}
-
-              {error && (
-                <div className="rounded-md bg-red-50 p-4 border border-red-200">
-                  <p className="text-sm text-red-800 whitespace-pre-line">{error}</p>
-                </div>
-              )}
-
-              <div className="flex gap-3">
-                {!isLastStep && (
-                  <button
-                    onClick={handleNext}
-                    className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
-                  >
-                    Devam Et
-                  </button>
-                )}
-                {isLastStep && (
-                  <button
-                    onClick={handleSubmit}
-                    disabled={loading}
-                    className="flex-1 px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 disabled:opacity-50"
-                  >
-                    {loading ? 'Kaydediliyor...' : 'Formu Kaydet ve Tanıları Hesapla'}
-                  </button>
-                )}
-              </div>
             </div>
-          );
-        })}
+
+            {currentStep > 1 && (
+              <div className="bg-yellow-50 p-4 rounded-md mb-4">
+                <p className="text-sm text-yellow-800">
+                  <strong>Filtrelenen sorular:</strong> Hastanın yaşı ({patientAge} yaş) ve
+                  önceki cevaplarına göre bazı sorular dinamik olarak gösterilmektedir.
+                </p>
+              </div>
+            )}
+
+            {currentStepInfo.stepCategories.map((category) => {
+              const categoryQuestions = currentStepInfo.stepQuestions.filter(
+                (q) => q.category_id == category.id
+              );
+
+              if (categoryQuestions.length === 0) return null;
+
+              return (
+                <div key={category.id} className="border-t border-gray-200 pt-4">
+                  <h4 className="text-md font-semibold text-gray-900 mb-4">
+                    {category.name}
+                  </h4>
+
+                  <div className="space-y-4">
+                    {categoryQuestions.map((q) => (
+                      <div key={q.id} className="pl-4">
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          {q.question_text}
+                          {q.is_required && <span className="text-red-600 ml-1">*</span>}
+                        </label>
+                        {renderQuestion(q)}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              );
+            })}
+
+            {error && (
+              <div className="rounded-md bg-red-50 p-4 border border-red-200">
+                <p className="text-sm text-red-800 whitespace-pre-line">{error}</p>
+              </div>
+            )}
+
+            <div className="flex gap-3">
+              {!currentStepInfo.isLastStep && (
+                <button
+                  onClick={handleNext}
+                  className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+                >
+                  Devam Et
+                </button>
+              )}
+              {currentStepInfo.isLastStep && (
+                <button
+                  onClick={handleSubmit}
+                  disabled={loading}
+                  className="flex-1 px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 disabled:opacity-50"
+                >
+                  {loading ? 'Kaydediliyor...' : 'Formu Kaydet'}
+                </button>
+              )}
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Unanswered Required Questions Dialog */}

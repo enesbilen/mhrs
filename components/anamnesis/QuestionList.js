@@ -300,13 +300,34 @@ export default function QuestionList({ questions: initialQuestions, categories, 
                   )}
                 </td>
                 <td className="px-6 py-4 text-sm text-gray-500">
-                  {question.criteria && question.criteria.length > 0 ? (
+                  {((question.criteria && question.criteria.length > 0) ||
+                    (question.dynamicConditions && question.dynamicConditions.length > 0)) ? (
                     <div className="text-xs space-y-1">
-                      {question.criteria.map((c, i) => (
-                        <div key={i} className="bg-yellow-100 px-2 py-1 rounded">
+                      {/* Static Criteria */}
+                      {question.criteria && question.criteria.map((c, i) => (
+                        <div key={`static-${i}`} className="bg-yellow-100 px-2 py-1 rounded">
                           {CRITERIA_LABELS[c] || c}
                         </div>
                       ))}
+
+                      {/* Dynamic Conditions */}
+                      {question.dynamicConditions && question.dynamicConditions.map((cond, i) => {
+                        const values = typeof cond.condition_value === 'string'
+                          ? JSON.parse(cond.condition_value)
+                          : (Array.isArray(cond.condition_value) ? cond.condition_value : []);
+
+                        return (
+                          <div key={`dynamic-${i}`} className="bg-blue-100 px-2 py-1 rounded">
+                            <strong>{cond.action === 'hide' ? 'Gizle' : 'Göster'}:</strong>{' '}
+                            "{cond.depends_on_question_text?.substring(0, 25)}..." ={' '}
+                            {values.map((v, idx) => (
+                              <span key={idx}>
+                                "{v}"{idx < values.length - 1 ? ' veya ' : ''}
+                              </span>
+                            ))}
+                          </div>
+                        );
+                      })}
                     </div>
                   ) : (
                     '-'

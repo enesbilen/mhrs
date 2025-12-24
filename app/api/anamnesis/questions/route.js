@@ -63,6 +63,7 @@ export async function POST(request) {
       options,
       criteria,
       order_index,
+      conditions,
     } = body;
 
     // Validate
@@ -116,8 +117,36 @@ export async function POST(request) {
       ]
     );
 
+    const questionId = result.insertId;
+
+    // Save conditions if provided
+    if (conditions && conditions.length > 0) {
+      for (const condition of conditions) {
+        const conditionValues = Array.isArray(condition.condition_value)
+          ? condition.condition_value
+          : [];
+
+        if (
+          condition.depends_on_question_id &&
+          conditionValues.length > 0
+        ) {
+          await db.execute(
+            `INSERT INTO question_conditions
+             (question_id, depends_on_question_id, action, condition_value)
+             VALUES (?, ?, ?, ?)`,
+            [
+              questionId,
+              condition.depends_on_question_id,
+              condition.action || 'hide',
+              JSON.stringify(conditionValues),
+            ]
+          );
+        }
+      }
+    }
+
     return NextResponse.json(
-      { message: 'Soru oluşturuldu', id: result.insertId },
+      { message: 'Soru oluşturuldu', id: questionId },
       { status: 201 }
     );
   } catch (error) {

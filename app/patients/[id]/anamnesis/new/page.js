@@ -21,10 +21,25 @@ async function getQuestions() {
      ORDER BY c.order_index, q.order_index`
   );
 
+  // Fetch all conditions
+  const conditions = await db.query(
+    `SELECT * FROM question_conditions`
+  );
+
+  // Group conditions by question_id
+  const conditionsByQuestion = conditions.reduce((acc, cond) => {
+    if (!acc[cond.question_id]) {
+      acc[cond.question_id] = [];
+    }
+    acc[cond.question_id].push(cond);
+    return acc;
+  }, {});
+
   return questions.map((q) => ({
     ...q,
     options: q.options_json ? JSON.parse(q.options_json) : null,
     criteria: q.criteria_json ? JSON.parse(q.criteria_json) : [],
+    conditions: conditionsByQuestion[q.id] || [],
   }));
 }
 

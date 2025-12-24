@@ -57,6 +57,7 @@ export async function PUT(request, { params }) {
       options,
       criteria,
       order_index,
+      conditions,
     } = body;
 
     // Validate
@@ -83,6 +84,36 @@ export async function PUT(request, { params }) {
         id,
       ]
     );
+
+    // Update conditions - delete existing and insert new ones
+    await db.execute('DELETE FROM question_conditions WHERE question_id = ?', [
+      id,
+    ]);
+
+    if (conditions && conditions.length > 0) {
+      for (const condition of conditions) {
+        const conditionValues = Array.isArray(condition.condition_value)
+          ? condition.condition_value
+          : [];
+
+        if (
+          condition.depends_on_question_id &&
+          conditionValues.length > 0
+        ) {
+          await db.execute(
+            `INSERT INTO question_conditions
+             (question_id, depends_on_question_id, action, condition_value)
+             VALUES (?, ?, ?, ?)`,
+            [
+              id,
+              condition.depends_on_question_id,
+              condition.action || 'hide',
+              JSON.stringify(conditionValues),
+            ]
+          );
+        }
+      }
+    }
 
     return NextResponse.json({ message: 'Soru güncellendi' });
   } catch (error) {
