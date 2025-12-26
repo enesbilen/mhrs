@@ -78,6 +78,7 @@ export async function POST(request) {
       'yes_no',
       'yes_no_with_note',
       'text_input',
+      'number_input',
       'single_choice',
       'multiple_choice',
       'medication_list',

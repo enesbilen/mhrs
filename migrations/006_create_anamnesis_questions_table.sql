@@ -6,6 +6,7 @@ CREATE TABLE IF NOT EXISTS anamnesis_questions (
     'yes_no',
     'yes_no_with_note',
     'text_input',
+    'number_input',
     'single_choice',
     'multiple_choice',
     'medication_list'

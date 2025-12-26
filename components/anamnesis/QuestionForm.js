@@ -18,6 +18,7 @@ const QUESTION_TYPES = [
   { value: 'yes_no', label: 'Evet/Hayır' },
   { value: 'yes_no_with_note', label: 'Evet/Hayır + Açıklama' },
   { value: 'text_input', label: 'Metin Girişi' },
+  { value: 'number_input', label: 'Sayısal Değer (Boy, Kilo vs.)' },
   { value: 'single_choice', label: 'Tek Seçim' },
   { value: 'multiple_choice', label: 'Çoklu Seçim' },
   { value: 'medication_list', label: 'İlaç Listesi' },

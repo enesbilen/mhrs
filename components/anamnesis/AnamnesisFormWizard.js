@@ -267,7 +267,15 @@ export default function AnamnesisFormWizard({
           return;
         }
       }
-      
+
+      // For number_input
+      if (q.question_type === 'number_input') {
+        if (answer === '' || answer === null || answer === undefined) {
+          missingFields.push(q.question_text);
+          return;
+        }
+      }
+
       // For single_choice and multiple_choice
       if ((q.question_type === 'single_choice' || q.question_type === 'multiple_choice') && !answer) {
         missingFields.push(q.question_text);
@@ -441,6 +449,18 @@ export default function AnamnesisFormWizard({
             type="text"
             value={answer}
             onChange={(e) => handleAnswer(question.id, e.target.value, question.question_type)}
+            className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+          />
+        );
+
+      case 'number_input':
+        return (
+          <input
+            type="number"
+            step="0.01"
+            value={answer}
+            onChange={(e) => handleAnswer(question.id, e.target.value, question.question_type)}
+            placeholder="Sayısal değer giriniz..."
             className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
           />
         );
@@ -706,7 +726,7 @@ export default function AnamnesisFormWizard({
                       <div key={q.id} className="pl-4">
                         <label className="block text-sm font-medium text-gray-700 mb-2">
                           {q.question_text}
-                          {q.is_required && <span className="text-red-600 ml-1">*</span>}
+                          {!!q.is_required && <span className="text-red-600 ml-1">*</span>}
                         </label>
                         {renderQuestion(q)}
                       </div>
