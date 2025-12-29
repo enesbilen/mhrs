@@ -5,7 +5,9 @@ export default function DiagnosesSection({
   formatAnswer, 
   title, 
   emptyMessage,
-  isMatched = true 
+  isMatched = true,
+  patientId,
+  formId
 }) {
   return (
     <div className="bg-white border border-gray-200 rounded p-6">
@@ -25,6 +27,8 @@ export default function DiagnosesSection({
               diagnosis={diagnosis}
               formatAnswer={formatAnswer}
               isMatched={isMatched}
+              patientId={patientId}
+              formId={formId}
             />
           ))}
         </div>

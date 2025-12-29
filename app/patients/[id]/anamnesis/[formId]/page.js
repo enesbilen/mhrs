@@ -101,9 +101,19 @@ async function getMatchedDiagnoses(formId) {
         };
       });
 
+      // Get defining characteristics for this diagnosis
+      const definingCharacteristics = await db.query(
+        `SELECT id, characteristic_text, order_index
+         FROM nurse_diagnosis_defining_characteristics
+         WHERE diagnosis_id = ?
+         ORDER BY order_index ASC, id ASC`,
+        [d.diagnosis_id]
+      );
+
       return {
         ...d,
         criteria: criteriaWithMatches,
+        defining_characteristics: definingCharacteristics,
       };
     })
   );
@@ -132,11 +142,21 @@ async function getUnmatchedDiagnoses(formId, matchedIds) {
         [d.id]
       );
 
+      // Get defining characteristics for this diagnosis
+      const definingCharacteristics = await db.query(
+        `SELECT id, characteristic_text, order_index
+         FROM nurse_diagnosis_defining_characteristics
+         WHERE diagnosis_id = ?
+         ORDER BY order_index ASC, id ASC`,
+        [d.id]
+      );
+
       if (criteria.length === 0) {
         return {
           ...d,
           matched_count: 0,
           criteria: [],
+          defining_characteristics: definingCharacteristics,
           reason: 'Bu tanı için henüz kriter tanımlanmamış',
         };
       }
@@ -179,6 +199,7 @@ async function getUnmatchedDiagnoses(formId, matchedIds) {
         ...d,
         matched_count: matchedCount,
         criteria: criteriaWithMatches,
+        defining_characteristics: definingCharacteristics,
       };
     })
   );

@@ -14,7 +14,9 @@ export default function StepView({ steps, categoriesByStep, answers, expandedSte
       {steps.map((stepNum) => {
         const stepCategories = categoriesByStep[stepNum] || [];
         const stepName = stepCategories[0]?.step_name || stepCategories[0]?.name || `Step ${stepNum}`;
-        const isExpanded = expandedSteps[stepNum] !== false;
+        // expandedSteps[stepNum] undefined ise true (varsayılan açık), false ise false (kapalı), true ise true (açık)
+        //const isExpanded = expandedSteps[stepNum] !== false;
+        const isExpanded = expandedSteps[stepNum] === undefined ? false : expandedSteps[stepNum];
         const stepAnswers = answers.filter((a) => (a.category_step || a.step_id) === stepNum);
 
         if (stepAnswers.length === 0) return null;

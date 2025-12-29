@@ -86,12 +86,14 @@ export default function AnamnesisResults({
         {viewMode === 'flat' && <FlatView answers={answers} />}
       </div>
 
-      <DiagnosesSection
+      <DiagnosesSection 
         diagnoses={matchedDiagnoses}
         formatAnswer={formatAnswer}
         title="Eşleşen Hemşire Tanıları"
         emptyMessage="Bu anamneze uygun hemşire tanısı bulunamadı."
         isMatched={true}
+        patientId={patient.id}
+        formId={form.id}
       />
 
       <DiagnosesSection
@@ -100,6 +102,8 @@ export default function AnamnesisResults({
         title="Eşleşmeyen Hemşire Tanıları"
         emptyMessage="Tüm tanılar eşleşti!"
         isMatched={false}
+        patientId={patient.id}
+        formId={form.id}
       />
     </div>
   );
