@@ -22,14 +22,27 @@ export async function POST(request, { params }) {
       );
     }
 
+    // Check if duplicate exists (same diagnosis cannot have duplicate intervention_text)
+    const existing = await db.query(
+      'SELECT id FROM diagnosis_interventions WHERE diagnosis_id = ? AND intervention_text = ?',
+      [id, intervention_text.trim()]
+    );
+
+    if (existing.length > 0) {
+      return NextResponse.json(
+        { error: 'Bu girişim zaten mevcut' },
+        { status: 400 }
+      );
+    }
+
     // Get max order_index
-    const [maxOrder] = await db.query(
+    const maxOrder = await db.query(
       'SELECT MAX(order_index) as max_order FROM diagnosis_interventions WHERE diagnosis_id = ?',
       [id]
     );
     const nextOrder = (maxOrder[0]?.max_order || 0) + 1;
 
-    const [result] = await db.execute(
+    const result = await db.execute(
       `INSERT INTO diagnosis_interventions (diagnosis_id, intervention_text, order_index)
        VALUES (?, ?, ?)`,
       [id, intervention_text.trim(), nextOrder]

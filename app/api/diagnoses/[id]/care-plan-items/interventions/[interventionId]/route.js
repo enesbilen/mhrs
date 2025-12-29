@@ -22,6 +22,19 @@ export async function PUT(request, { params }) {
       );
     }
 
+    // Check if duplicate exists for another intervention in this diagnosis
+    const existing = await db.query(
+      'SELECT id FROM diagnosis_interventions WHERE diagnosis_id = ? AND intervention_text = ? AND id != ?',
+      [id, intervention_text.trim(), interventionId]
+    );
+
+    if (existing.length > 0) {
+      return NextResponse.json(
+        { error: 'Bu girişim zaten başka bir kayıtta mevcut' },
+        { status: 400 }
+      );
+    }
+
     await db.execute(
       `UPDATE diagnosis_interventions
        SET intervention_text = ?, updated_at = CURRENT_TIMESTAMP

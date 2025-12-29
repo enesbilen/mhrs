@@ -1,7 +1,7 @@
 import { requireUser } from '@/lib/auth';
 import { notFound } from 'next/navigation';
 import Header from '@/components/common/Header';
-import CarePlanForm from '@/components/anamnesis/CarePlanForm';
+import CarePlanForm, { CarePlanResults } from '@/components/anamnesis/CarePlanForm';
 
 const db = require('@/lib/db');
 
@@ -104,6 +104,16 @@ async function getInterventions(diagnosisId, carePlanId = null) {
   return interventions.map(i => ({ ...i, selected: false }));
 }
 
+async function getEvaluationOptions(diagnosisId) {
+  return await db.query(
+    `SELECT id, option_text, option_value, order_index
+     FROM diagnosis_evaluation_options
+     WHERE diagnosis_id = ?
+     ORDER BY order_index ASC, id ASC`,
+    [diagnosisId]
+  );
+}
+
 export default async function CarePlanPage({ params }) {
   await requireUser();
   const { id, formId, diagnosisId } = await params;
@@ -119,6 +129,7 @@ export default async function CarePlanPage({ params }) {
   const carePlan = await getCarePlan(id, formId, diagnosisId);
   const expectedOutcomes = await getExpectedOutcomes(diagnosisId, carePlan?.id);
   const interventions = await getInterventions(diagnosisId, carePlan?.id);
+  const evaluationOptions = await getEvaluationOptions(diagnosisId);
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -151,7 +162,18 @@ export default async function CarePlanPage({ params }) {
             carePlan={carePlan}
             expectedOutcomes={expectedOutcomes}
             interventions={interventions}
+            evaluationOptions={evaluationOptions}
           />
+
+          {carePlan && (
+            <CarePlanResults
+              carePlan={carePlan}
+              expectedOutcomes={expectedOutcomes}
+              interventions={interventions}
+              evaluation={carePlan.evaluation}
+              evaluationOptions={evaluationOptions}
+            />
+          )}
         </div>
       </main>
     </div>

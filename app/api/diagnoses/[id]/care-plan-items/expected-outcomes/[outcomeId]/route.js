@@ -22,6 +22,19 @@ export async function PUT(request, { params }) {
       );
     }
 
+    // Check if duplicate exists for another outcome in this diagnosis
+    const existing = await db.query(
+      'SELECT id FROM diagnosis_expected_outcomes WHERE diagnosis_id = ? AND outcome_text = ? AND id != ?',
+      [id, outcome_text.trim(), outcomeId]
+    );
+
+    if (existing.length > 0) {
+      return NextResponse.json(
+        { error: 'Bu beklenen sonuç kriteri zaten başka bir kayıtta mevcut' },
+        { status: 400 }
+      );
+    }
+
     await db.execute(
       `UPDATE diagnosis_expected_outcomes
        SET outcome_text = ?, updated_at = CURRENT_TIMESTAMP

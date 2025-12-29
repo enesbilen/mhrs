@@ -35,6 +35,16 @@ async function getInterventions(diagnosisId) {
   );
 }
 
+async function getEvaluationOptions(diagnosisId) {
+  return await db.query(
+    `SELECT id, option_text, option_value, order_index, created_at, updated_at
+     FROM diagnosis_evaluation_options
+     WHERE diagnosis_id = ?
+     ORDER BY order_index ASC, id ASC`,
+    [diagnosisId]
+  );
+}
+
 export default async function CarePlanItemsPage({ params }) {
   await requireUser();
   const { id } = await params;
@@ -46,6 +56,7 @@ export default async function CarePlanItemsPage({ params }) {
 
   const expectedOutcomes = await getExpectedOutcomes(id);
   const interventions = await getInterventions(id);
+  const evaluationOptions = await getEvaluationOptions(id);
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -68,6 +79,7 @@ export default async function CarePlanItemsPage({ params }) {
             diagnosisId={diagnosis.id}
             expectedOutcomes={expectedOutcomes}
             interventions={interventions}
+            evaluationOptions={evaluationOptions}
           />
         </div>
       </main>
