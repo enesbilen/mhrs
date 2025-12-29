@@ -2,6 +2,7 @@ import { requireUser } from '@/lib/auth';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import AnamnesisFormWizard from '@/components/anamnesis/AnamnesisFormWizard';
+import Header from '@/components/common/Header';
 
 const db = require('@/lib/db');
 
@@ -73,33 +74,11 @@ export default async function NewAnamnesisPage({ params }) {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <nav className="bg-white shadow">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between h-16">
-            <div className="flex items-center">
-              <Link href="/" className="text-xl font-bold hover:text-blue-600">
-                MHRS
-              </Link>
-              <span className="ml-4 text-gray-500">/</span>
-              <Link
-                href="/patients"
-                className="ml-4 text-gray-700 hover:text-blue-600"
-              >
-                Hastalar
-              </Link>
-              <span className="ml-4 text-gray-500">/</span>
-              <Link
-                href={`/patients/${patient.id}`}
-                className="ml-4 text-gray-700 hover:text-blue-600"
-              >
-                {patient.first_name} {patient.last_name}
-              </Link>
-              <span className="ml-4 text-gray-500">/</span>
-              <span className="ml-4 text-gray-700">Yeni Anamnez Formu</span>
-            </div>
-          </div>
-        </div>
-      </nav>
+      <Header breadcrumbItems={[
+        { label: 'Hasta Yönetimi', href: '/patients' },
+        { label: `${patient.first_name} ${patient.last_name}`, href: `/patients/${patient.id}` },
+        { label: 'Yeni Anamnez Formu' }
+      ]} />
 
       <main className="max-w-5xl mx-auto py-6 sm:px-6 lg:px-8">
         <div className="px-4 py-6 sm:px-0">

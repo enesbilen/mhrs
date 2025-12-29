@@ -17,10 +17,12 @@ export default function DiagnosisList({ diagnoses: initialDiagnoses }) {
   const [characteristicsDialog, setCharacteristicsDialog] = useState({ isOpen: false, diagnosis: null });
   const [searchTerm, setSearchTerm] = useState('');
   const [criteriaFilter, setCriteriaFilter] = useState('all');
+  const [sortColumn, setSortColumn] = useState(null);
+  const [sortDirection, setSortDirection] = useState('asc');
 
-  // Filter logic
+  // Sort and filter logic
   const filteredDiagnoses = useMemo(() => {
-    return diagnoses.filter((diagnosis) => {
+    let filtered = diagnoses.filter((diagnosis) => {
       // Search filter
       const searchMatch =
         !searchTerm ||
@@ -35,11 +37,76 @@ export default function DiagnosisList({ diagnoses: initialDiagnoses }) {
 
       return searchMatch && criteriaMatch;
     });
-  }, [diagnoses, searchTerm, criteriaFilter]);
+
+    // Sort logic
+    if (sortColumn) {
+      filtered = [...filtered].sort((a, b) => {
+        let aValue, bValue;
+
+        switch (sortColumn) {
+          case 'id':
+            aValue = a.id;
+            bValue = b.id;
+            break;
+          case 'name':
+            aValue = a.name?.toLowerCase() || '';
+            bValue = b.name?.toLowerCase() || '';
+            break;
+          case 'description':
+            aValue = a.description?.toLowerCase() || '';
+            bValue = b.description?.toLowerCase() || '';
+            break;
+          case 'min_criteria_count':
+            aValue = a.min_criteria_count || 0;
+            bValue = b.min_criteria_count || 0;
+            break;
+          case 'criteria_count':
+            aValue = a.criteria_count || 0;
+            bValue = b.criteria_count || 0;
+            break;
+          case 'defining_characteristics':
+            aValue = a.defining_characteristics?.length || 0;
+            bValue = b.defining_characteristics?.length || 0;
+            break;
+          default:
+            return 0;
+        }
+
+        if (aValue < bValue) return sortDirection === 'asc' ? -1 : 1;
+        if (aValue > bValue) return sortDirection === 'asc' ? 1 : -1;
+        return 0;
+      });
+    } else {
+      // Default sort: most recently updated or created first
+      filtered = [...filtered].sort((a, b) => {
+        // Use updated_at if available, otherwise use created_at
+        const aDate = a.updated_at ? new Date(a.updated_at) : (a.created_at ? new Date(a.created_at) : new Date(0));
+        const bDate = b.updated_at ? new Date(b.updated_at) : (b.created_at ? new Date(b.created_at) : new Date(0));
+        
+        // Sort descending (newest first)
+        return bDate - aDate;
+      });
+    }
+
+    return filtered;
+  }, [diagnoses, searchTerm, criteriaFilter, sortColumn, sortDirection]);
 
   const handleClearFilters = () => {
     setSearchTerm('');
     setCriteriaFilter('all');
+    setSortColumn(null);
+    setSortDirection('asc');
+  };
+
+  const handleSort = (column) => {
+    if (sortColumn === column) {
+      // Toggle direction if same column
+      setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc');
+    } else {
+      // New column, default to ascending
+      setSortColumn(column);
+      setSortDirection('asc');
+    }
   };
 
   const handleDeleteClick = (id) => {
@@ -111,20 +178,83 @@ export default function DiagnosisList({ diagnoses: initialDiagnoses }) {
         <table className="min-w-full divide-y divide-gray-200">
         <thead className="bg-gray-50">
           <tr>
-            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-              Tanı Adı
+            <th 
+              className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100 select-none"
+              onClick={() => handleSort('id')}
+            >
+              <div className="flex items-center gap-2">
+                ID
+                {sortColumn === 'id' && (
+                  <span className="text-gray-700">
+                    {sortDirection === 'asc' ? '↑' : '↓'}
+                  </span>
+                )}
+              </div>
             </th>
-            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-              Açıklama
+            <th 
+              className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100 select-none"
+              onClick={() => handleSort('name')}
+            >
+              <div className="flex items-center gap-2">
+                Tanı Adı
+                {sortColumn === 'name' && (
+                  <span className="text-gray-700">
+                    {sortDirection === 'asc' ? '↑' : '↓'}
+                  </span>
+                )}
+              </div>
             </th>
-            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-              Min. Kriter
+            <th 
+              className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100 select-none"
+              onClick={() => handleSort('description')}
+            >
+              <div className="flex items-center gap-2">
+                Açıklama
+                {sortColumn === 'description' && (
+                  <span className="text-gray-700">
+                    {sortDirection === 'asc' ? '↑' : '↓'}
+                  </span>
+                )}
+              </div>
             </th>
-            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-              Tanımlı Kriter
+            <th 
+              className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100 select-none"
+              onClick={() => handleSort('min_criteria_count')}
+            >
+              <div className="flex items-center gap-2">
+                Min. Kriter
+                {sortColumn === 'min_criteria_count' && (
+                  <span className="text-gray-700">
+                    {sortDirection === 'asc' ? '↑' : '↓'}
+                  </span>
+                )}
+              </div>
             </th>
-            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-              Tanımlayıcı Özellikler
+            <th 
+              className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100 select-none"
+              onClick={() => handleSort('criteria_count')}
+            >
+              <div className="flex items-center gap-2">
+                Tanımlı Kriter
+                {sortColumn === 'criteria_count' && (
+                  <span className="text-gray-700">
+                    {sortDirection === 'asc' ? '↑' : '↓'}
+                  </span>
+                )}
+              </div>
+            </th>
+            <th 
+              className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100 select-none"
+              onClick={() => handleSort('defining_characteristics')}
+            >
+              <div className="flex items-center gap-2">
+                Tanımlayıcı Özellikler
+                {sortColumn === 'defining_characteristics' && (
+                  <span className="text-gray-700">
+                    {sortDirection === 'asc' ? '↑' : '↓'}
+                  </span>
+                )}
+              </div>
             </th>
             <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
               İşlemler
@@ -134,6 +264,9 @@ export default function DiagnosisList({ diagnoses: initialDiagnoses }) {
         <tbody className="bg-white divide-y divide-gray-200">
           {filteredDiagnoses.map((diagnosis) => (
             <tr key={diagnosis.id}>
+              <td className="px-6 py-4 text-sm font-medium text-gray-900">
+                {diagnosis.id}
+              </td>
               <td className="px-6 py-4 text-sm font-medium text-gray-900">
                 {diagnosis.name}
               </td>
@@ -174,25 +307,82 @@ export default function DiagnosisList({ diagnoses: initialDiagnoses }) {
                 )}
               </td>
               <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                <Link
-                  href={`/diagnoses/${diagnosis.id}/criteria`}
-                  className="text-green-600 hover:text-green-900 mr-4"
-                >
-                  Kriterler
-                </Link>
-                <Link
-                  href={`/diagnoses/${diagnosis.id}/edit`}
-                  className="text-blue-600 hover:text-blue-900 mr-4"
-                >
-                  Düzenle
-                </Link>
-                <button
-                  onClick={() => handleDeleteClick(diagnosis.id)}
-                  disabled={deleting === diagnosis.id}
-                  className="text-red-600 hover:text-red-900 disabled:opacity-50"
-                >
-                  {deleting === diagnosis.id ? 'Siliniyor...' : 'Sil'}
-                </button>
+                <div className="flex items-center justify-end gap-3">
+                  <Link
+                    href={`/diagnoses/${diagnosis.id}/criteria`}
+                    className="text-green-600 hover:text-green-900 transition-colors"
+                    title="Kriterler"
+                  >
+                    <svg
+                      className="w-5 h-5"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"
+                      />
+                    </svg>
+                  </Link>
+                  <Link
+                    href={`/diagnoses/${diagnosis.id}/edit`}
+                    className="text-blue-600 hover:text-blue-900 transition-colors"
+                    title="Düzenle"
+                  >
+                    <svg
+                      className="w-5 h-5"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
+                      />
+                    </svg>
+                  </Link>
+                  <button
+                    onClick={() => handleDeleteClick(diagnosis.id)}
+                    disabled={deleting === diagnosis.id}
+                    className="text-red-600 hover:text-red-900 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                    title={deleting === diagnosis.id ? 'Siliniyor...' : 'Sil'}
+                  >
+                    {deleting === diagnosis.id ? (
+                      <svg
+                        className="w-5 h-5 animate-spin"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
+                        />
+                      </svg>
+                    ) : (
+                      <svg
+                        className="w-5 h-5"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+                        />
+                      </svg>
+                    )}
+                  </button>
+                </div>
               </td>
             </tr>
           ))}

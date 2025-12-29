@@ -8,8 +8,8 @@ import TableFilter from '@/components/common/TableFilter';
 import ConfirmDialog from '@/components/common/ConfirmDialog';
 import AlertDialog from '@/components/common/AlertDialog';
 const QUESTION_TYPES = {
-  yes_no: 'Evet/Hayır',
-  yes_no_with_note: 'Evet/Hayır + Açıklama',
+  yes_no: 'Var/Yok',
+  yes_no_with_note: 'Var/Yok + Açıklama',
   text_input: 'Metin Girişi',
   single_choice: 'Tek Seçim',
   multiple_choice: 'Çoklu Seçim',
@@ -214,8 +214,8 @@ export default function QuestionList({ questions: initialQuestions, categories, 
             value: filterType,
             options: [
               { value: 'all', label: 'Tümü' },
-              { value: 'yes_no', label: 'Evet/Hayır' },
-              { value: 'yes_no_with_note', label: 'Evet/Hayır + Açıklama' },
+              { value: 'yes_no', label: 'Var/Yok' },
+              { value: 'yes_no_with_note', label: 'Var/Yok + Açıklama' },
               { value: 'text_input', label: 'Metin' },
               { value: 'single_choice', label: 'Tek Seçim' },
               { value: 'multiple_choice', label: 'Çoklu Seçim' },
@@ -250,7 +250,7 @@ export default function QuestionList({ questions: initialQuestions, categories, 
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                 <SortButton field="question" label="Soru" />
               </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider ">
                 <SortButton field="category" label="Kategori" />
               </th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -273,7 +273,7 @@ export default function QuestionList({ questions: initialQuestions, categories, 
           <tbody className="bg-white divide-y divide-gray-200">
             {filteredAndSortedQuestions.map((question, index) => (
               <tr key={question.id}>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                <td className="px-6 py-4  text-sm text-gray-500">
                   {question.order_index || index + 1}
                 </td>
                 <td className="px-6 py-4 text-sm text-gray-900">
@@ -286,7 +286,7 @@ export default function QuestionList({ questions: initialQuestions, categories, 
                     )}
                   </div>
                 </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                <td className="px-6 py-4 text-sm text-gray-500 ">
                   {question.category_name || '-'}
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">

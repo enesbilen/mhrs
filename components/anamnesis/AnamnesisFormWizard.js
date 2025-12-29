@@ -149,7 +149,7 @@ export default function AnamnesisFormWizard({
     // For yes_no_with_note questions
     if (questionType === 'yes_no_with_note') {
       const currentAnswer = answers[questionId];
-      if (value === 'Evet') {
+      if (value === 'Var') {
         setAnswers({ 
           ...answers, 
           [questionId]: typeof currentAnswer === 'object' && currentAnswer?.note 
@@ -184,7 +184,7 @@ export default function AnamnesisFormWizard({
     updated[index][field] = value;
     setAnswers({ 
       ...answers, 
-      [questionId]: { answer: 'Evet', medications: updated }
+      [questionId]: { answer: 'Var', medications: updated }
     });
   };
 
@@ -194,7 +194,7 @@ export default function AnamnesisFormWizard({
     setAnswers({ 
       ...answers, 
       [questionId]: { 
-        answer: 'Evet', 
+        answer: 'Var', 
         medications: [...medications, { name: '', dose: '', frequency: '', route: '' }]
       }
     });
@@ -205,11 +205,11 @@ export default function AnamnesisFormWizard({
     const medications = currentAnswer?.medications || [];
     const updated = medications.filter((_, i) => i !== index);
     if (updated.length === 0) {
-      setAnswers({ ...answers, [questionId]: 'Hayır' });
+      setAnswers({ ...answers, [questionId]: 'Yok' });
     } else {
       setAnswers({ 
         ...answers, 
-        [questionId]: { answer: 'Evet', medications: updated }
+        [questionId]: { answer: 'Var', medications: updated }
       });
     }
   };
@@ -231,7 +231,7 @@ export default function AnamnesisFormWizard({
       
       // For yes_no_with_note questions
       if (q.question_type === 'yes_no_with_note') {
-        if (typeof answer === 'object' && answer.answer === 'Evet') {
+        if (typeof answer === 'object' && answer.answer === 'Var') {
           if (!answer.note || answer.note.trim() === '') {
             missingFields.push(`${q.question_text} - Açıklama gerekli`);
             return;
@@ -241,7 +241,7 @@ export default function AnamnesisFormWizard({
       
       // For medication_list questions
       if (q.question_type === 'medication_list') {
-        if (typeof answer === 'object' && answer.answer === 'Evet') {
+        if (typeof answer === 'object' && answer.answer === 'Var') {
           if (!answer.medications || answer.medications.length === 0) {
             missingFields.push(`${q.question_text} - En az bir ilaç eklenmelidir`);
             return;
@@ -397,7 +397,7 @@ export default function AnamnesisFormWizard({
       case 'yes_no':
         return (
           <div key={question.id} className="space-y-2">
-            {['Evet', 'Hayır'].map((opt) => (
+            {['Var', 'Yok'].map((opt) => (
               <label key={opt} className="flex items-center">
                 <input
                   type="radio"
@@ -415,7 +415,7 @@ export default function AnamnesisFormWizard({
       case 'yes_no_with_note':
         return (
           <div key={question.id} className="space-y-2">
-            {['Evet', 'Hayır'].map((opt) => (
+            {['Var', 'Yok'].map((opt) => (
               <label key={opt} className="flex items-center">
                 <input
                   type="radio"
@@ -429,7 +429,7 @@ export default function AnamnesisFormWizard({
                 <span className="ml-2 text-sm text-gray-700">{opt}</span>
               </label>
             ))}
-            {answer?.answer === 'Evet' && (
+            {answer?.answer === 'Var' && (
               <textarea
                 placeholder="Açıklama..."
                 value={answer?.note || ''}
@@ -513,10 +513,10 @@ export default function AnamnesisFormWizard({
 
       case 'medication_list':
         const currentAnswer = answer || '';
-        const showMedication = typeof currentAnswer === 'object' && currentAnswer?.answer === 'Evet';
+        const showMedication = typeof currentAnswer === 'object' && currentAnswer?.answer === 'Var';
         return (
           <div key={question.id} className="space-y-2">
-            {['Evet', 'Hayır'].map((opt) => (
+            {['Var', 'Yok'].map((opt) => (
               <label key={opt} className="flex items-center">
                 <input
                   type="radio"
@@ -527,7 +527,7 @@ export default function AnamnesisFormWizard({
                       : currentAnswer === opt
                   }
                   onChange={() => {
-                    if (opt === 'Evet') {
+                    if (opt === 'Var') {
                       const existingMeds = typeof currentAnswer === 'object' && currentAnswer?.medications && currentAnswer.medications.length > 0
                         ? currentAnswer.medications
                         : [{ name: '', dose: '', frequency: '', route: '' }];

@@ -54,7 +54,7 @@ export default function TableFilter({
 
   return (
     <div className="bg-gray-50 border-b border-gray-200 px-4 py-3">
-      <div className="flex flex-col md:flex-row md:items-center md:justify-between space-y-3 md:space-y-0">
+      <div className="flex flex-col md:flex-row md:items-center md:justify-between space-y-3 md:space-y-0 gap-4">
         {/* Left: Search */}
         <div className="flex-1 max-w-md">
           <div className="relative">

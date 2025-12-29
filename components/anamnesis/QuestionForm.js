@@ -15,8 +15,8 @@ const Select = dynamic(() => import('react-select'), {
 });
 
 const QUESTION_TYPES = [
-  { value: 'yes_no', label: 'Evet/Hayır' },
-  { value: 'yes_no_with_note', label: 'Evet/Hayır + Açıklama' },
+  { value: 'yes_no', label: 'Var/Yok' },
+  { value: 'yes_no_with_note', label: 'Var/Yok + Açıklama' },
   { value: 'text_input', label: 'Metin Girişi' },
   { value: 'number_input', label: 'Sayısal Değer (Boy, Kilo vs.)' },
   { value: 'single_choice', label: 'Tek Seçim' },
