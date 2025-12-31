@@ -2,11 +2,13 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import AlertDialog from '@/components/common/AlertDialog';
 
 export default function CarePlanForm({ patientId, formId, diagnosisId, diagnosis, carePlan, expectedOutcomes: initialOutcomes, interventions: initialInterventions, evaluationOptions: initialEvaluationOptions }) {
   const router = useRouter();
   const [saving, setSaving] = useState(false);
   const [showResults, setShowResults] = useState(!!carePlan);
+  const [alertDialog, setAlertDialog] = useState({ isOpen: false, message: '', variant: 'error' });
   
   // Expected outcomes state
   const [expectedOutcomes, setExpectedOutcomes] = useState(initialOutcomes || []);
@@ -73,15 +75,26 @@ export default function CarePlanForm({ patientId, formId, diagnosisId, diagnosis
       if (response.ok) {
         setShowResults(true);
         router.refresh();
-        // Show success message
-        alert('Bakım planı başarıyla kaydedildi');
+        setAlertDialog({
+          isOpen: true,
+          message: 'Bakım planı başarıyla kaydedildi',
+          variant: 'success',
+        });
       } else {
         const data = await response.json();
-        alert(data.error || 'Bakım planı kaydedilemedi');
+        setAlertDialog({
+          isOpen: true,
+          message: data.error || 'Bakım planı kaydedilemedi',
+          variant: 'error',
+        });
       }
     } catch (error) {
       console.error('Error saving care plan:', error);
-      alert('Bir hata oluştu');
+      setAlertDialog({
+        isOpen: true,
+        message: 'Bir hata oluştu',
+        variant: 'error',
+      });
     } finally {
       setSaving(false);
     }
@@ -206,6 +219,13 @@ export default function CarePlanForm({ patientId, formId, diagnosisId, diagnosis
           </button>
         </div>
       </div>
+      <AlertDialog
+        isOpen={alertDialog.isOpen}
+        onClose={() => setAlertDialog({ ...alertDialog, isOpen: false })}
+        title={alertDialog.variant === 'error' ? 'Hata' : 'Başarılı'}
+        message={alertDialog.message}
+        variant={alertDialog.variant}
+      />
     </form>
   );
 }
